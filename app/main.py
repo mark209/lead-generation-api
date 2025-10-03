@@ -16,6 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
+from app.google_sheets import append_lead_to_sheet
 from app.middleware import configure_middlewares, get_request_id
 from app.models import ErrorResponse, Lead, LeadResponse
 from app.services import forward_to_crm
@@ -130,9 +131,12 @@ async def create_lead(lead: Lead, request: Request) -> LeadResponse:
     logger.info("Lead accepted", extra={"lead_email": lead.email, "client_ip": client_host})
     try:
         await forward_to_crm(lead)
+        await append_lead_to_sheet(lead)
+    except HTTPException:
+        raise
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Failed to forward lead")
-        raise HTTPException(status_code=502, detail="Failed to forward lead") from exc
+        logger.exception("Failed processing downstream integrations")
+        raise HTTPException(status_code=502, detail="Failed to process lead") from exc
     return LeadResponse(message="Lead accepted", data=lead)
 
 
