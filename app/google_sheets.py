@@ -11,7 +11,10 @@ from app.models import Lead
 
 logger = logging.getLogger(__name__)
 
-_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+_SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
 
 
 def _build_credentials(service_account_info: Dict[str, Any]) -> Credentials:
