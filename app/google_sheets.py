@@ -25,12 +25,15 @@ def _append_row_to_sheet(lead_data: Dict[str, Any]) -> None:
     settings = get_settings()
     creds = _build_credentials(settings.google_service_account_info)
     client = gspread.authorize(creds)
-    spreadsheet = client.open_by_key(settings.google_sheet_id)
-    worksheet = (
-        spreadsheet.worksheet(settings.google_sheet_worksheet)
-        if settings.google_sheet_worksheet
-        else spreadsheet.sheet1
-    )
+
+    sheet_id = (settings.google_sheet_id or "").strip()
+    if not sheet_id:
+        raise ValueError("google_sheet_id is not configured")
+
+    spreadsheet = client.open_by_key(sheet_id)
+    worksheet_name = (settings.google_sheet_worksheet or "").strip()
+    worksheet = spreadsheet.worksheet(worksheet_name) if worksheet_name else spreadsheet.sheet1
+
     timestamp = datetime.now(timezone.utc).isoformat()
     worksheet.append_row(
         [
