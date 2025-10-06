@@ -128,10 +128,24 @@ async def create_lead(lead: Lead, request: Request) -> LeadResponse:
     """Accept a lead payload, validate, and forward to the CRM layer."""
 
     client_host = request.client.host if request.client else "unknown"
-    logger.info("Lead accepted", extra={"lead_email": lead.email, "client_ip": client_host})
+    source_hint = (
+        str(lead.source_url)
+        if lead.source_url
+        else request.headers.get("X-Source-Url")
+        or request.headers.get("Referer")
+        or request.headers.get("Origin")
+    )
+    logger.info(
+        "Lead accepted",
+        extra={
+            "lead_email": lead.email,
+            "client_ip": client_host,
+            "source_url": source_hint,
+        },
+    )
     try:
         await forward_to_crm(lead)
-        await append_lead_to_sheet(lead)
+        await append_lead_to_sheet(lead, source_hint)
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover - defensive logging

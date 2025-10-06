@@ -21,7 +21,7 @@ def _build_credentials(service_account_info: Dict[str, Any]) -> Credentials:
     return Credentials.from_service_account_info(service_account_info, scopes=_SCOPES)
 
 
-def _append_row_to_sheet(lead_data: Dict[str, Any]) -> None:
+def _append_row_to_sheet(lead_data: Dict[str, Any], source: str | None) -> None:
     settings = get_settings()
     creds = _build_credentials(settings.google_service_account_info)
     client = gspread.authorize(creds)
@@ -46,12 +46,13 @@ def _append_row_to_sheet(lead_data: Dict[str, Any]) -> None:
             lead_data["state"],
             lead_data["postal"],
             lead_data.get("jornaya") or "",
+            source or lead_data.get("source_url") or "",
         ],
         value_input_option="USER_ENTERED",
     )
 
 
-async def append_lead_to_sheet(lead: Lead) -> None:
+async def append_lead_to_sheet(lead: Lead, source_hint: str | None = None) -> None:
     """Persist the lead into the configured Google Sheet."""
 
     settings = get_settings()
@@ -60,5 +61,9 @@ async def append_lead_to_sheet(lead: Lead) -> None:
         return
 
     lead_data = lead.model_dump()
-    await asyncio.to_thread(_append_row_to_sheet, lead_data)
-    logger.info("Appended lead to Google Sheet", extra={"lead_email": lead.email})
+    source_value = source_hint or lead_data.get("source_url")
+    await asyncio.to_thread(_append_row_to_sheet, lead_data, source_value)
+    logger.info(
+        "Appended lead to Google Sheet",
+        extra={"lead_email": lead.email, "source_url": source_value},
+    )

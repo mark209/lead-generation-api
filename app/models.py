@@ -1,7 +1,7 @@
 import re
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 _PHONE_PATTERN = re.compile(r"^\+?[1-9]\d{7,14}$")
@@ -21,6 +21,10 @@ class Lead(BaseModel):
     state: str = Field(..., min_length=2, max_length=50)
     postal: str = Field(..., description="Postal or ZIP code")
     jornaya: str | None = Field(default=None, description="Jornaya or Trusted Form token")
+    source_url: AnyHttpUrl | None = Field(
+        default=None,
+        description="Origin URL where the lead form was submitted.",
+    )
 
     @field_validator("phone")
     @classmethod
